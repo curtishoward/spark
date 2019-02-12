@@ -1,3 +1,63 @@
+#  Spark with Cook Support
+
+In order to build this package, you need to build and install `cook jobclient` first.
+
+```
+# Check out cook jobclient and install to local m2 repository
+git clone https://github.com/twosigma/Cook.git
+cd Cook/jobclient
+mvn package
+mvn org.apache.maven.plugins:maven-install-plugin:2.5.2:install-file \
+  -Dfile=target/cook-jobclient-0.2.0-SNAPSHOT.jar \
+  -DpomFile=pom.xml
+```
+
+Now, we are ready to build the Spark distribution as follows. Note that if you are using Java 7, we
+probably need to increase heap size used by Maven a little bit. However, if you are on Java 8, you
+could ignore the following step.
+```
+export MAVEN_OPTS="-Xmx4g -XX:MaxPermSize=1024M -XX:ReservedCodeCacheSize=1024m"
+```
+Then, we could
+```
+./dev/make-distribution.sh --tgz --name hadoop-provided-scala2.11 -Dscala-2.11 -Phadoop-2.6,hadoop-provided,hive,cook -DskipTests
+```
+
+Note: you need to make sure to include "cook" among the optional profiles (-P).
+
+The tarball will be created with the hadoop version and scala version
+embedded in the tarball name.  Additionally, we use `git describe
+--tags` to create the spark version, rather than just taking what's in
+the pom.xml files.  Check that the Apache Spark tag for your version is
+available, for example (for version 2.2.1):
+```
+git tag
+...
+v2.2.1
+...
+``` 
+
+If your tag does not exist yet, you can either:
+1. Fetch it from the upstream Apache Spark repository.  For example (for version 2.2.1):
+```
+git fetch https://github.com/apache/spark.git refs/tags/v2.2.1:refs/tags/v2.2.1
+```
+2. **Or**, manually tag the specific commit marking the version:
+```
+git tag -a v2.2.1 e30e2698a2 -m "Add tag for v2.2.1"
+```
+
+This way, we get a tarball name that looks like
+
+    spark-2.2.1-20-g9dc4df0-bin-hadoop-provided-scala2.11.tgz
+
+rather than
+
+    spark-2.0.2-bin-hadoop-provided-scala2.11.tgz
+
+and thus we can manage multiple internal releases on the same upstream
+version, and also manage our scala version dependencies appropriately.
+
 # Apache Spark
 
 Spark is a fast and general cluster computing system for Big Data. It provides

@@ -821,8 +821,11 @@ class SparkContext(config: SparkConf) extends Logging {
       path: String,
       minPartitions: Int = defaultMinPartitions): RDD[String] = withScope {
     assertNotStopped()
-    hadoopFile(path, classOf[TextInputFormat], classOf[LongWritable], classOf[Text],
-      minPartitions).map(pair => pair._2.toString).setName(path)
+    // NOTE that this is a patched version of text file to work with kerberized hadoop
+    val jobConf = new JobConf(hadoopConfiguration)
+    FileInputFormat.setInputPaths(jobConf, path)
+    hadoopRDD(jobConf, classOf[TextInputFormat], classOf[LongWritable], classOf[Text],
+      minPartitions).map(_._2.toString).setName(path)
   }
 
   /**
